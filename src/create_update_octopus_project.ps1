@@ -24,8 +24,7 @@ function Update-OctopusProcess {
     $new_process_json = Get-Content "Octopus\DeploymentProcess.json" -Raw
     $new_process = ConvertFrom-Json $new_process_json
     $new_version = $current_version
-    Add-Member -InputObject $new_process -MemberType NoteProperty -Name "Version" -Value $new_version -Force
-    $new_process_json = ConvertTo-Json $new_process -Depth 100
+    $new_process_json = $new_process_json.Replace("%VERSION%",$new_version)
     $response = Invoke-WebRequest -Uri "http://deploy.particular.net/api/deploymentprocesses/${process_id}?apiKey=${API_key}" -Body $new_process_json -Method Put
 }
 
