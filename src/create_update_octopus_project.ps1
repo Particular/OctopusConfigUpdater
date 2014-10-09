@@ -1,0 +1,76 @@
+﻿param(
+[Parameter(Mandatory=$true)]
+[String]$ProjectName
+)
+
+$API_key = "API-J1E9TNHUEXWVUZMGOQNY90J3CG"
+
+$project_slug = $ProjectName.Replace(".","-").ToLower()
+
+function Replace-Placeholders {
+    param([string]$project_json)
+    $project_json = $project_json.Replace("%PROJECT_NAME%",$ProjectName)
+    $project_json
+}
+
+function Update-OctopusProcess {
+    param([string]$process_id)
+    Write-Host "Updating deployment process $process_id"
+
+    $response = Invoke-WebRequest -Uri "http://deploy.particular.net/api/deploymentprocesses/${process_id}?apiKey=${API_key}" -Method Get
+    $current_process = ConvertFrom-Json $response.Content
+    $current_version = $current_process.Version
+
+    $new_process_json = Get-Content "Octopus\DeploymentProcess.json" -Raw
+    $new_process = ConvertFrom-Json $new_process_json
+    $new_version = $current_version
+    Add-Member -InputObject $new_process -MemberType NoteProperty -Name "Version" -Value $new_version -Force
+    $new_process_json = ConvertTo-Json $new_process -Depth 100
+    $response = Invoke-WebRequest -Uri "http://deploy.particular.net/api/deploymentprocesses/${process_id}?apiKey=${API_key}" -Body $new_process_json -Method Put
+}
+
+function New-OctopusProject {
+    Write-Host "Creating a new project"
+
+    $project_json = Get-Content "Octopus\Project.json" -Raw
+    $project_json = Replace-Placeholders $project_json
+
+    $response = Invoke-WebRequest -Uri "http://deploy.particular.net/api/projects?apiKey=${API_key}" -Body $project_json -Method Post
+    $response_object = ConvertFrom-Json $response.Content
+    $project_id = $response_object.Id
+    $process_id = $response_object.DeploymentProcessId
+
+    Update-OctopusProcess $process_id
+}
+
+function Update-OctopusProject {
+    param([string]$project_id)
+    Write-Host "Updating existing project $project_id"
+
+    $project_json = Get-Content "Octopus\Project.json"
+    $project_json = Replace-Placeholders $project_json
+
+    $response = Invoke-WebRequest -Uri "http://deploy.particular.net/api/projects/${project_id}?apiKey=${API_key}" -Body $project_json -Method Put
+    $response_object = ConvertFrom-Json $response.Content
+    $project_id = $response_object.Id
+    $process_id = $response_object.DeploymentProcessId
+
+    Update-OctopusProcess $process_id
+}
+
+try {
+    $response = Invoke-WebRequest -Uri "http://deploy.particular.net/api/projects/${project_slug}?apiKey=${API_key}" -Method Get
+}
+catch 
+{    
+    $request = $_.Exception.Response 
+    if ($request.StatusCode -eq 404) {
+        New-OctopusProject
+        return
+    } else {
+        throw "Error while contacting Octopus"
+    }
+} 
+$project_object = ConvertFrom-Json $response.Content
+$project_id = $project_object.Id
+Update-OctopusProject $project_id

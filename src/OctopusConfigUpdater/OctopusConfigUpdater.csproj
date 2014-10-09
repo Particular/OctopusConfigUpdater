@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="CreatePackages" AssemblyFile="..\packages\NuGetPackager.0.2.1\build\NuGetPackager.dll" />
+  <Import Project="..\packages\GitVersionTask.1.3.2\Build\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.1.3.2\Build\GitVersionTask.targets')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{048073CC-039F-4255-A3A7-DE95FED11A9A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>OctopusConfigUpdater</RootNamespace>
+    <AssemblyName>OctopusConfigUpdater</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SolutionDir>$(MSBuildProjectDirectory)\..\</SolutionDir>
+    <ProjectPath>$(MSBuildProjectName)</ProjectPath>
+  </PropertyGroup>
+  <Target Name="EnsureNuGetPackageBuildImports">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\GitVersionTask.1.3.2\Build\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.1.3.2\Build\GitVersionTask.targets'))" />
+  </Target>
+  <Target Name="Rebuild" DependsOnTargets="Build"/>
+  <Target Name="Build" DependsOnTargets="EnsureNuGetPackageBuildImports;UpdateAssemblyInfo">
+    <CreatePackages
+      DeployContentInRelease="false"
+      ProjectName="$(MSBuildProjectName)"
+      Version="$(GfvNuGetVersion)"
+      PackagesFolder="$(SolutionDir)packages\"
+      PackagingFolder="$(SolutionDir)..\packaging\"
+      NuGetsFolder="$(SolutionDir)..\nugets\"
+      DeployFolder="$(SolutionDir)..\deploy\" />
+  </Target>
+</Project>
