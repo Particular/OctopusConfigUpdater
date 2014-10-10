@@ -8,9 +8,9 @@
 $project_slug = $ProjectName.Replace(".","-").ToLower()
 
 function Replace-Placeholders {
-    param([string]$project_json)
-    $project_json = $project_json.Replace("%PROJECT_NAME%",$ProjectName)
-    $project_json
+    param([string]$json)
+    $json = $json.Replace("%PROJECT_NAME%",$ProjectName)
+    $json
 }
 
 function Update-OctopusProcess {
@@ -22,9 +22,9 @@ function Update-OctopusProcess {
     $current_version = $current_process.Version
 
     $new_process_json = Get-Content "Octopus\DeploymentProcess.json" -Raw
-    $new_process = ConvertFrom-Json $new_process_json
     $new_version = $current_version
     $new_process_json = $new_process_json.Replace("%VERSION%",$new_version)
+    $new_process_json = Replace-Placeholders $new_process_json
     $response = Invoke-WebRequest -Uri "http://deploy.particular.net/api/deploymentprocesses/${process_id}?apiKey=${API_Key}" -Body $new_process_json -Method Put
 }
 
